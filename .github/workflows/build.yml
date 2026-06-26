@@ -7,26 +7,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
-          pip3 install --user --upgrade buildozer cython==0.29.33
-
       - name: Build with Buildozer
-        env:
-          # Указываем Buildozer не скачивать ничего, а использовать уже существующее
-          ANDROID_HOME: /home/runner/android-sdk
-          ANDROID_NDK_HOME: /home/runner/android-sdk/ndk/25.1.8937393
-          # Запрещаем Buildozer лезть в интернет за SDK, так как мы всё подготовили
-          BUILDOZER_AUTO_ACCEPT: 1
-        run: |
-          # Прямой вызов сборки без предварительного поиска SDK менеджером
-          # Мы доверяем нашим путям в buildozer.spec
-          buildozer android debug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: ArtemSBulgakov/buildozer-action@v1
         with:
-          name: ImperialCalculator_APK
-          path: bin/*.apk
+          command: buildozer android debug
+        env:
+          # Это заставляет контейнер Buildozer самому всё скачать правильно
+          BUILDOZER_AUTO_ACCEPT: 1
