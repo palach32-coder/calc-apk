@@ -1,43 +1,67 @@
 name: Build APK
-on: [push]
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
-          pip3 install --user --upgrade buildozer cython==0.29.33
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
-      - name: Prepare Android Environment
-        run: |
-          export ANDROID_HOME=/home/runner/android-sdk
-          mkdir -p $ANDROID_HOME/cmdline-tools
-          
-          # Устанавливаем стабильные инструменты
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
-          unzip -q tools.zip -d $ANDROID_HOME/cmdline-tools
-          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-          
-          # Устанавливаем SDK и NDK (используем проверенные версии)
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.1" "ndk;25.1.8937393"
-          
-          # Фиксируем пути для Buildozer
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+    - name: Install system dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          git zip unzip openjdk-17-jdk \
+          autoconf libtool pkg-config zlib1g-dev \
+          libncurses5-dev libncursesw5-dev libtinfo5 \
+          cmake libffi-dev libssl-dev
 
-      - name: Build with Buildozer
-        run: |
-          # Используем переменные среды, чтобы Buildozer не пытался качать свои версии
-          buildozer android debug
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: package
-          path: bin/*.apk
+    - name: Install Buildozer & Cython
+      run: |
+        pip install --upgrade pip
+        pip install buildozer cython
+
+    # КЛЮЧЕВОЙ МОМЕНТ: Подмена ссылок на актуальное зеркало
+    - name: Configure Buildozer to use working NDK/SDK mirrors
+      run: |
+        mkdir -p ~/.buildozer
+        cat > ~/.buildozer/default.spec << EOF
+[app]
+android.accept_sdk_license = True
+android.ndk = 23b
+android.sdk = 30
+android.ndk_url = https://dl.google.com/android/repository/android-ndk-r23b-linux.zip
+android.sdk_url = https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+EOF
+
+    - name: Build APK
+      run: |
+        # Явно говорим версии, игнорируем автообновления
+        export P4A_NDK_VERSION="23b"
+        export P4A_SDK_VERSION="30"
+        export BUILDOZER_AUTO_ACCEPT=1
+        
+        # САМЫЙ ВАЖНЫЙ ФЛАГ: отключаем проверку обновлений, чтобы не лез на битый URL
+        buildozer -v android debug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: MyApp
+        path: bin/*.apk
