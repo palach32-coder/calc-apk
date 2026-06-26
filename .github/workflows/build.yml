@@ -7,16 +7,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
+          pip3 install --user --upgrade buildozer cython==0.29.33
+
+      - name: Setup Android SDK and NDK
+        run: |
+          export ANDROID_HOME=/home/runner/android-sdk
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          
+          # Скачивание SDK инструментов
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
+          unzip -q tools.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          
+          # Принятие лицензий (теперь в нужную папку)
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          
+          # Установка компонентов точно под наш конфиг
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.1"
+          
+          # Установка NDK
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.1.8937393"
+          mkdir -p $ANDROID_HOME/ndk
+          ln -s /home/runner/android-sdk/ndk/25.1.8937393 $ANDROID_HOME/ndk/25.1.8937393
+
       - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        with:
-          command: buildozer android debug
         env:
-          # Принудительное принятие лицензий для Docker-контейнера
-          ANDROID_SDK_HOME: /opt/android-sdk
+          ANDROID_HOME: /home/runner/android-sdk
+        run: |
+          buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: package
+          name: ImperialCalculator_APK
           path: bin/*.apk
