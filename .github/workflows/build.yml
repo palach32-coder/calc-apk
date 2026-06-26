@@ -13,18 +13,28 @@ jobs:
           pip3 install --user --upgrade buildozer
           pip3 install --user --upgrade cython==0.29.33
 
+      - name: Setup Android SDK
+        run: |
+          # Устанавливаем путь к SDK
+          export ANDROID_HOME=/home/runner/android-sdk
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+          
+          # Устанавливаем SDK-менеджер и компоненты вручную
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
+          unzip tools.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          
+          # Принимаем лицензии
+          yes | sdkmanager --licenses
+          
+          # Устанавливаем нужные инструменты
+          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.1"
+
       - name: Build with Buildozer
         env:
-          # Указываем правильные пути для SDK и NDK
-          ANDROID_HOME: /home/runner/.android/sdk
-          ANDROID_SDK_HOME: /home/runner/.android/sdk
+          ANDROID_HOME: /home/runner/android-sdk
         run: |
-          # Принудительно создаем структуру и принимаем лицензии
-          mkdir -p /home/runner/.android/sdk/licenses
-          echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > /home/runner/.android/sdk/licenses/android-sdk-license
-          echo -e "\n84831b9409646a918e30573bab4c9c91346d8713" >> /home/runner/.android/sdk/licenses/android-sdk-license
-          
-          # Запуск сборки
           buildozer android debug
 
       - name: Upload APK
