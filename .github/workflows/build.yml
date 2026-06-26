@@ -13,31 +13,16 @@ jobs:
           sudo apt-get install -y python3-pip git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
           pip3 install --user --upgrade buildozer cython==0.29.33
 
-      - name: Setup Android SDK and NDK
-        run: |
-          export ANDROID_HOME=/home/runner/android-sdk
-          mkdir -p $ANDROID_HOME/cmdline-tools
-          
-          # Скачивание SDK инструментов
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
-          unzip -q tools.zip -d $ANDROID_HOME/cmdline-tools
-          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-          
-          # Принятие лицензий (теперь в нужную папку)
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-          
-          # Установка компонентов точно под наш конфиг
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.1"
-          
-          # Установка NDK
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.1.8937393"
-          mkdir -p $ANDROID_HOME/ndk
-          ln -s /home/runner/android-sdk/ndk/25.1.8937393 $ANDROID_HOME/ndk/25.1.8937393
-
       - name: Build with Buildozer
         env:
+          # Указываем Buildozer не скачивать ничего, а использовать уже существующее
           ANDROID_HOME: /home/runner/android-sdk
+          ANDROID_NDK_HOME: /home/runner/android-sdk/ndk/25.1.8937393
+          # Запрещаем Buildozer лезть в интернет за SDK, так как мы всё подготовили
+          BUILDOZER_AUTO_ACCEPT: 1
         run: |
+          # Прямой вызов сборки без предварительного поиска SDK менеджером
+          # Мы доверяем нашим путям в buildozer.spec
           buildozer android debug
 
       - name: Upload APK
