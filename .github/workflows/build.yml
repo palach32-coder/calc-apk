@@ -15,16 +15,16 @@ jobs:
 
       - name: Build with Buildozer
         env:
-          ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+          # Указываем правильные пути для SDK и NDK
+          ANDROID_HOME: /home/runner/.android/sdk
+          ANDROID_SDK_HOME: /home/runner/.android/sdk
         run: |
-          # Создаем структуру папок вручную
-          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
+          # Принудительно создаем структуру и принимаем лицензии
+          mkdir -p /home/runner/.android/sdk/licenses
+          echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > /home/runner/.android/sdk/licenses/android-sdk-license
+          echo -e "\n84831b9409646a918e30573bab4c9c91346d8713" >> /home/runner/.android/sdk/licenses/android-sdk-license
           
-          # Принимаем лицензии
-          echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo -e "\n84831b9409646a918e30573bab4c9c91346d8713" >> /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          
-          # Запускаем сборку
+          # Запуск сборки
           buildozer android debug
 
       - name: Upload APK
