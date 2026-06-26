@@ -14,7 +14,14 @@ jobs:
           pip3 install --user --upgrade cython==0.29.33
 
       - name: Build with Buildozer
+        env:
+          ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
         run: |
+          # Автоматическое принятие лицензий
+          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
+          echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          echo -e "\n84831b9409646a918e30573bab4c9c91346d8713" >> /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          
           buildozer android debug
 
       - name: Upload APK
