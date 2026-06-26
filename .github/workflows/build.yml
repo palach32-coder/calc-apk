@@ -1,12 +1,13 @@
 name: Build APK
 on: [push]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install dependencies
+
+      - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
@@ -15,26 +16,26 @@ jobs:
 
       - name: Setup Android SDK
         run: |
-          # Устанавливаем путь к SDK
+          # Создаем структуру папок
           export ANDROID_HOME=/home/runner/android-sdk
-          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-          
-          # Устанавливаем SDK-менеджер и компоненты вручную
           mkdir -p $ANDROID_HOME/cmdline-tools
+          
+          # Скачиваем и устанавливаем инструменты командной строки
           wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
           unzip tools.zip -d $ANDROID_HOME/cmdline-tools
           mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
           
-          # Принимаем лицензии
-          yes | sdkmanager --licenses
+          # Принимаем все лицензии принудительно
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
           
-          # Устанавливаем нужные инструменты
-          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.1"
+          # Устанавливаем необходимые компоненты
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.1"
 
       - name: Build with Buildozer
         env:
           ANDROID_HOME: /home/runner/android-sdk
         run: |
+          # Указываем Buildozer использовать наш настроенный SDK
           buildozer android debug
 
       - name: Upload APK
